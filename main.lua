@@ -24,8 +24,8 @@ local LEVEL_W = 1
 local COLOR = 1
 -----------------------------------------------------------------------------------------
 local composer = require('composer')
-local loadSave = require( "modules.loadSave" )
-local createStars = require( "modules.createStars" )
+local loadSave = require("modules.loadSave")
+local createStars = require("modules.createStars")
 
 -- Hide Statusbar and activate Multitouch
 display.setStatusBar(display.HiddenStatusBar)
@@ -40,10 +40,10 @@ end
 composer.recycleOnSceneChange = true 
 
 -- Seed random numbers
-math.randomseed( os.time( ) )
+math.randomseed(os.time())
 
 -- Play Stars
-createStars.create( )
+createStars.create()
 -----------------------------------------------------------------------------------------
 -- Coldstart Handle
 local asteroidBaseStats = loadSave.loadTable( "_asteroidBaseStats.json" )
