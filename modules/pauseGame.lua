@@ -25,7 +25,7 @@ local fireLoopTimerTemp
 local function playButtonEvent( event )
     local phase = event.phase
     if ( "ended" == phase ) then
-        createStars.create( )
+        createStars.start( )
         physics.start( )
         transition.resume( )
         spaceshipTemp.exhaust1:play()
@@ -46,7 +46,7 @@ end
 local function menuButtonEvent( event )
     local phase = event.phase    
     if ( "ended" == phase ) then
-        createStars.create( )
+        createStars.start( )
         transition.resume( )
 
         pauseScreen:removeSelf( )

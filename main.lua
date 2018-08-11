@@ -24,8 +24,11 @@ local LEVEL_W = 1
 local COLOR = 1
 -----------------------------------------------------------------------------------------
 local composer = require('composer')
+
 local loadSave = require("modules.loadSave")
 local createStars = require("modules.createStars")
+local configuration = require("modules.configuration")
+local coldstartHandle = require("modules.coldstartHandle")
 
 -- Hide Statusbar and activate Multitouch
 display.setStatusBar(display.HiddenStatusBar)
@@ -43,11 +46,20 @@ composer.recycleOnSceneChange = true
 math.randomseed(os.time())
 
 -- Play Stars
-createStars.create()
+createStars.start()
+
+-- Handle Coldstart
+coldstartHandle.handleColdstart()
+
+-- Configure the Game
+configuration.configure()
+
 -----------------------------------------------------------------------------------------
 -- Coldstart Handle
-local asteroidBaseStats = loadSave.loadTable( "_asteroidBaseStats.json" )
-if ( asteroidBaseStats == nil ) then
+
+--[[
+local asteroidBaseStats = loadSave.loadTable("_asteroidBaseStats.json")
+if (asteroidBaseStats == nil) then
 	local asteroidBaseStatsT = {
 		name = "Cole",
 		exp = EXP_A,
@@ -57,11 +69,11 @@ if ( asteroidBaseStats == nil ) then
 		spawnrate = SPAWNRATE,
 		velocity = VELOCITY,
 	}
-	loadSave.saveTable( asteroidBaseStatsT, "_asteroidBaseStats.json" )
+	loadSave.saveTable(asteroidBaseStatsT, "_asteroidBaseStats.json")
 end
 
-local asteroidRandStats = loadSave.loadTable( "_asteroidRandStats.json" )
-if ( asteroidRandStats == nil ) then
+local asteroidRandStats = loadSave.loadTable("_asteroidRandStats.json")
+if (asteroidRandStats == nil) then
 	local asteroidRandStatsT = {
         exp = EXP_A,--math.random( EXP_A-(EXP_A/2), EXP_A+(EXP_A/2) ),
         health = HEALTH_A,--math.random( HEALTH_A-(HEALTH_A/2), HEALTH_A+(HEALTH_A/2) ),
@@ -70,11 +82,11 @@ if ( asteroidRandStats == nil ) then
         spawnrate = SPAWNRATE,--math.random( SPAWNRATE-(SPAWNRATE/2), SPAWNRATE+(SPAWNRATE/2) ),
         velocity = VELOCITY,--math.random( VELOCITY-(VELOCITY/2), VELOCITY+(VELOCITY/2) ),
 	}
-	loadSave.saveTable( asteroidRandStatsT, "_asteroidRandStats.json" )
+	loadSave.saveTable(asteroidRandStatsT, "_asteroidRandStats.json")
 end
 
-local spaceshipStats = loadSave.loadTable( "_spaceshipStats.json" )
-if ( spaceshipStats == nil ) then
+local spaceshipStats = loadSave.loadTable("_spaceshipStats.json")
+if (spaceshipStats == nil) then
 	local spaceshipStatsT = {
 		name = "X1Z",
 		health = HEALTH_S,
@@ -84,11 +96,11 @@ if ( spaceshipStats == nil ) then
 		nextLevelExp = NEXTLEVELEXP,
 		money = MONEY_S,
 	}
-	loadSave.saveTable( spaceshipStatsT, "_spaceshipStats.json" )
+	loadSave.saveTable(spaceshipStatsT, "_spaceshipStats.json")
 end
 
-local weaponStats = loadSave.loadTable( "_weaponStats.json" )
-if ( weaponStats == nil ) then
+local weaponStats = loadSave.loadTable("_weaponStats.json")
+if (weaponStats == nil) then
 	local weaponStatsT = {
 		name = "Blaster",
 		damage = DAMAGE_W,
@@ -96,11 +108,15 @@ if ( weaponStats == nil ) then
 		level = LEVEL_W,
 		color = COLOR,
 	}
-	loadSave.saveTable( weaponStatsT, "_weaponStats.json" )
+	loadSave.saveTable(weaponStatsT, "_weaponStats.json")
 end
+--]]
+
 -----------------------------------------------------------------------------------------
-local progressBarOptions = loadSave.loadTable( "progressBarOptions.json" )
-if ( progressBarOptions == nil ) then
+
+--[[
+local progressBarOptions = loadSave.loadTable("progressBarOptions.json")
+if (progressBarOptions == nil) then
 	local progressBarOptionsT = {
 	    width = 64,
 	    height = 64,
@@ -108,11 +124,11 @@ if ( progressBarOptions == nil ) then
 	    sheetContentWidth = 384,
 	    sheetContentHeight = 64
 	}
-	loadSave.saveTable( progressBarOptionsT, "progressBarOptions.json" )
+	loadSave.saveTable(progressBarOptionsT, "progressBarOptions.json")
 end
 
-local exhaustAnimationOptions = loadSave.loadTable( "exhaustAnimationOptions.json" )
-if ( exhaustAnimationOptions == nil ) then
+local exhaustAnimationOptions = loadSave.loadTable("exhaustAnimationOptions.json")
+if (exhaustAnimationOptions == nil) then
 	local exhaustAnimationOptionsT = {
 		numFrames = 8,
 		height = 64,
@@ -120,11 +136,11 @@ if ( exhaustAnimationOptions == nil ) then
 		sheetContentWidth = 108,
 		width = 36
 	}
-	loadSave.saveTable( exhaustAnimationOptionsT, "exhaustAnimationOptions.json" )
+	loadSave.saveTable(exhaustAnimationOptionsT, "exhaustAnimationOptions.json")
 end
 
-local exhaustAnimationSequence = loadSave.loadTable( "exhaustAnimationSequence.json" )
-if ( exhaustAnimationSequence == nil ) then
+local exhaustAnimationSequence = loadSave.loadTable("exhaustAnimationSequence.json")
+if (exhaustAnimationSequence == nil) then
 	local exhaustAnimationSequenceT = {
 		loopDirection = "forward",
 		name = "exhaust",
@@ -133,11 +149,11 @@ if ( exhaustAnimationSequence == nil ) then
 		time = 500,
 		count = 8
 	}
-	loadSave.saveTable( exhaustAnimationSequenceT, "exhaustAnimationSequence.json" )
+	loadSave.saveTable(exhaustAnimationSequenceT, "exhaustAnimationSequence.json")
 end
 
-local explosionAnimationOptions = loadSave.loadTable( "explosionAnimationOptions.json" )
-if ( explosionAnimationOptions == nil ) then
+local explosionAnimationOptions = loadSave.loadTable("explosionAnimationOptions.json")
+if (explosionAnimationOptions == nil) then
 	local explosionAnimationOptionsT = {
 		numFrames = 12,
 		height = 96,
@@ -145,11 +161,11 @@ if ( explosionAnimationOptions == nil ) then
 		sheetContentWidth = 1152,
 		width = 96
 	}
-	loadSave.saveTable( explosionAnimationOptionsT, "explosionAnimationOptions.json" )
+	loadSave.saveTable(explosionAnimationOptionsT, "explosionAnimationOptions.json")
 end
 
-local explosionAnimationSequence = loadSave.loadTable( "explosionAnimationSequence.json" )
-if ( explosionAnimationSequence == nil ) then
+local explosionAnimationSequence = loadSave.loadTable("explosionAnimationSequence.json")
+if (explosionAnimationSequence == nil) then
 	local explosionAnimationSequenceT = {
 		loopDirection = "forward",
 		name = "explosion",
@@ -158,8 +174,9 @@ if ( explosionAnimationSequence == nil ) then
 		time = 1500,
 		count = 12
 	}
-	loadSave.saveTable( explosionAnimationSequenceT, "explosionAnimationSequence.json" )
+	loadSave.saveTable(explosionAnimationSequenceT, "explosionAnimationSequence.json")
 end
+--]]
 
 -- Goto next scene
-composer.gotoScene( "scenes.start" )
+composer.gotoScene("scenes.start")

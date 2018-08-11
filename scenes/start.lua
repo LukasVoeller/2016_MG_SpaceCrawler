@@ -1,8 +1,8 @@
 -----------------------------------------------------------------------------------------
 -- Start Scene
 -----------------------------------------------------------------------------------------
-local composer = require( "composer" )
-local widget = require( "widget" )
+local composer = require("composer")
+local widget = require("widget")
 
 local scene = composer.newScene( )
 
@@ -55,12 +55,12 @@ function scene:create( event )
     uiGroup:insert( startButton )
 
     -- Load Name Text
-    local nameText = display.newText( "© 2016 Lemware", 77, _H-10, "fonts/pixel_font_7.ttf", 12 )
+    local nameText = display.newText( "© 2018 Lemware", 77, _H-10, "fonts/pixel_font_7.ttf", 12 )
     sceneGroup:insert( nameText )
     uiGroup:insert( nameText )
 
     -- Load Name Text
-    local versionText = display.newText( "v 0.3.5-0001", _W-67, _H-10, "fonts/pixel_font_7.ttf", 12 )
+    local versionText = display.newText( "v 0.3.6-0001", _W-67, _H-10, "fonts/pixel_font_7.ttf", 12 )
     sceneGroup:insert( versionText )
     uiGroup:insert( versionText )
 end
