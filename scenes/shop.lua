@@ -4,7 +4,7 @@
 local composer = require( "composer" )
 local widget = require( "widget" )
 local loadSave = require( "modules.loadSave" )
-local fixScore = require( "modules.fixScore" )
+local numberFormat = require( "modules.numberFormat" )
 
 local scene = composer.newScene()
 
@@ -30,7 +30,7 @@ local function saveAll( )
 end
 
 local function updateText( )
-    moneyText.text = "Money: " .. fixScore.fix( spaceshipStats.money ) .. "$"
+    moneyText.text = "Money: " .. numberFormat.format( spaceshipStats.money ) .. "$"
     laserLevelText.text = "Lvl: " .. weaponStats.level
     firerateText.text = "T: " .. weaponStats.firerate
 end
@@ -127,7 +127,7 @@ function scene:create( event )
     sceneGroup:insert( shopText )
     uiGroup:insert( shopText )
 
-    moneyText = display.newText( "Money: " .. fixScore.fix( spaceshipStats.money ) .. "$", 110, 85, "fonts/pixel_font_7.ttf", 17, "left" )
+    moneyText = display.newText( "Money: " .. numberFormat.format( spaceshipStats.money ) .. "$", 110, 85, "fonts/pixel_font_7.ttf", 17, "left" )
     sceneGroup:insert( moneyText )
     uiGroup:insert( moneyText )
 

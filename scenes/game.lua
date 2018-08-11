@@ -1,30 +1,30 @@
 -----------------------------------------------------------------------------------------
 -- Game Scene
 -----------------------------------------------------------------------------------------
-local composer = require( "composer" )
-local physics = require( "physics" )
-local widget = require( "widget" )
-local loadSave = require( "modules.loadSave" )
-local pauseGame = require( "modules.pauseGame" )
-local fixScore = require( "modules.fixScore" )
-local gameOver = require( "modules.gameOver" )
-local spaceship = require( "classes.spaceship" )
-local asteroid = require( "classes.asteroid" )
-local weapon = require( "classes.weapon" )
+local composer = require("composer")
+local physics = require("physics")
+local widget = require("widget")
+local loadSave = require("modules.loadSave")
+local pauseGame = require("modules.pauseGame")
+local numberFormat = require("modules.numberFormat")
+local gameOver = require("modules.gameOver")
+local spaceship = require("classes.spaceship")
+local asteroid = require("classes.asteroid")
+local weapon = require("classes.weapon")
 
 local scene = composer.newScene()
 
 _W = display.contentWidth;  -- Get the width of the screen
 _H = display.contentHeight; -- Get the height of the screen
 
-physics.start( )
-physics.setGravity( 0, 0 )
-physics.setDrawMode( "normal" )
+physics.start()
+physics.setGravity(0, 0)
+physics.setDrawMode("normal")
 
-local progressBarOptions = loadSave.loadTable( "progressBarOptions.json" )
-local asteroidRandStats = loadSave.loadTable( "_asteroidRandStats.json" )
-local spaceshipStats = loadSave.loadTable( "_spaceshipStats.json" )
-local weaponStats = loadSave.loadTable( "_weaponStats.json" )
+local progressBarOptions = loadSave.loadTable("progressBarOptions.json")
+local asteroidRandStats = loadSave.loadTable("_asteroidRandStats.json")
+local spaceshipStats = loadSave.loadTable("_spaceshipStats.json")
+local weaponStats = loadSave.loadTable("_weaponStats.json")
 
 -- Scene Groups
 local background = display.newGroup()
@@ -48,21 +48,22 @@ local levelText
 local currentHpText
 local currentExpText
 
--- Spaceship & Weapon
-local weapon = weapon.new( "Blaster", weaponStats.damage, weaponStats.firerate, weaponStats.color )
+-- Weapon & Spaceship
+local weapon = weapon.new(
+    weaponStats.name,
+    weaponStats.damage,
+    weaponStats.firerate,
+    weaponStats.color
+)
 local spaceship = spaceship.new(
-    "X1Z",
-    spaceshipStats.health + ( spaceshipStats.level * 5 ),
+    spaceshipStats.name,
+    spaceshipStats.health,
     weapon
 )
-uiGroup:insert( spaceship ) 
-uiGroup:insert( spaceship.exhaust1 )
-uiGroup:insert( spaceship.exhaust2 )  
-spaceship.isBodyActive = false
 
-local progressSheetExp = graphics.newImageSheet( "images/userinterface/progress_bar_exp.png", progressBarOptions )
-local progressSheetHp = graphics.newImageSheet( "images/userinterface/progress_bar_health.png", progressBarOptions )
-
+-- Health & Exp Bar
+local progressSheetExp = graphics.newImageSheet("images/userinterface/progress_bar_exp.png", progressBarOptions)
+local progressSheetHp = graphics.newImageSheet("images/userinterface/progress_bar_health.png", progressBarOptions)
 local progressViewExp = widget.newProgressView(
     {   
         sheet = progressSheetExp,
@@ -82,7 +83,6 @@ local progressViewExp = widget.newProgressView(
         isAnimated = true
     }
 )
-
 local progressViewHp = widget.newProgressView(
     {  
         sheet = progressSheetHp,
@@ -103,53 +103,59 @@ local progressViewHp = widget.newProgressView(
     }
 )
 
-uiGroup:insert( progressViewExp )
-uiGroup:insert( progressViewHp )
+uiGroup:insert(spaceship)
+uiGroup:insert(spaceship.exhaust1)
+uiGroup:insert(spaceship.exhaust2)
+uiGroup:insert(progressViewExp)
+uiGroup:insert(progressViewHp)
+
+spaceship.isBodyActive = true
+
 -----------------------------------------------------------------------------------------
 -- Functions
 -----------------------------------------------------------------------------------------
-local function saveAll( )
-    loadSave.saveTable( spaceshipStats, "_spaceshipStats.json" )
-    loadSave.saveTable( weaponStats, "_weaponStats.json" )
+local function saveAll()
+    loadSave.saveTable(spaceshipStats, "_spaceshipStats.json")
+    loadSave.saveTable(weaponStats, "_weaponStats.json")
 end
 
-local function pauseButtonEvent( event )
+local function pauseButtonEvent(event)
     local phase = event.phase
 
-    if ( "ended" == phase ) then
-        saveAll( )
+    if ("ended" == phase) then
+        saveAll()
         gamePaused = 1
-        pauseButton:setEnabled( false ) 
-        pauseGame.pause( spaceship, gameLoopTimer, fireLoopTimer )
+        pauseButton:setEnabled(false) 
+        pauseGame.pause(spaceship, gameLoopTimer, fireLoopTimer)
     end
 end
 
-local function updateText( )
+local function updateText()
     levelText.text = spaceshipStats.level
     
-    if ( spaceship.health <= 0 ) then
+    if (spaceship.health <= 0) then
         currentHpText.text = "Hp: 0"
     else
         currentHpText.text = "Hp: " .. spaceship.health
     end
-    currentExpText.text = "Exp: " .. fixScore.fix( spaceshipStats.exp ) .. "/" .. fixScore.fix( spaceshipStats.nextLevelExp )
+    currentExpText.text = "Exp: " .. numberFormat.format(spaceshipStats.exp) .. "/" .. numberFormat.format(spaceshipStats.nextLevelExp)
 
     livesText.text = spaceshipStats.lives
-    moneyText.text = fixScore.fix( spaceshipStats.money ) .. "$"
+    moneyText.text = numberFormat.format(spaceshipStats.money) .. "c"
 end
 
-local function updateBarHp( )
-    if ( spaceship.health <= 0 ) then
+local function updateBarHp()
+    if (spaceship.health <= 0) then
         progressViewHp:setProgress( 0 )
     else
-        progressViewHp:setProgress( spaceship.health/100 )
+        progressViewHp:setProgress(spaceship.health/100)
     end
 end
 
-local function levelUp(  )
-    spaceship.health = 100 + ( spaceshipStats.level * 5 )
-    updateText( )
-    updateBarHp( )
+local function levelUp()
+    spaceship.health = spaceshipStats.health
+    updateText()
+    updateBarHp()
 
     levelUpText = display.newText( "Level up!" , _W/2, _H/2, "fonts/pixel_font_7.ttf", 25 )
     uiGroup:insert( levelUpText )
