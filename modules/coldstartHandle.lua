@@ -21,7 +21,7 @@ local S_MONEY = 0
 local W_DAMAGE = 10
 local W_FIRERATE = 300
 local W_LEVEL = 1
-local W_COLOR = 1
+local W_COLOR = "green"
 -----------------------------------------------------------------------------------------
 
 local M = {}

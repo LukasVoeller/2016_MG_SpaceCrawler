@@ -237,7 +237,7 @@ local function restoreShip()
 end
 
 -- Deactivates Body, has to be outside of Collison
-local function deactivateBody( )
+local function deactivateBody()
     spaceship.isBodyActive = false
 end
 
