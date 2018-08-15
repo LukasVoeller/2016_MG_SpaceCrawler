@@ -57,7 +57,7 @@ function scene:create( event )
     uiGroup:insert(startButton)
 
     -- Load Publisher Text
-    local nameText = display.newText("© 2018 Lemware", 77, _H-10, "fonts/pixel_font_7.ttf", 12)
+    local nameText = display.newText("© 2018 Lukas Völler", 77, _H-10, "fonts/pixel_font_7.ttf", 12)
     sceneGroup:insert(nameText)
     uiGroup:insert(nameText)
 

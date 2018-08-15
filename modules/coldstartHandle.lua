@@ -6,7 +6,7 @@ local A_MONEY = 30
 local A_EXP = 10
 local A_HEALTH = 30
 local A_DAMAGE = 10
-local A_SPAWNRATE = 300
+local A_SPAWNRATE = 500
 local A_VELOCITY = 100
 -----------------------------------------------------------------------------------------
 -- GAMEBALANCE SPACESHIP

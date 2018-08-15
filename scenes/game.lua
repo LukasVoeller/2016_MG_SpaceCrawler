@@ -36,6 +36,7 @@ local lives
 local asteroidsTable = {}
 local pauseButton
 local gamePaused
+local asteroidCounter = 0
 
 -- Timer
 local gameLoopTimer
@@ -47,6 +48,7 @@ local livesText
 local levelText
 local currentHpText
 local currentExpText
+local asteroidCounterText
 
 -- Weapon & Spaceship
 local weapon = weapon.new(
@@ -124,7 +126,7 @@ local function pauseButtonEvent(event)
 
     if ("ended" == phase) then
         saveAll()
-        gamePaused = 1
+        gamePaused = true
         pauseButton:setEnabled(false) 
         pauseGame.pause(spaceship, gameLoopTimer, fireLoopTimer)
     end
@@ -132,16 +134,16 @@ end
 
 local function updateText()
     levelText.text = spaceshipStats.level
-    
+    currentExpText.text = "Exp: " .. numberFormat.format(spaceshipStats.exp) .. "/" .. numberFormat.format(spaceshipStats.nextLevelExp)
+    livesText.text = spaceshipStats.lives
+    moneyText.text = numberFormat.format(spaceshipStats.money) .. "c"
+    asteroidCounterText.text = "AD: " .. asteroidCounter
+
     if (spaceship.health <= 0) then
         currentHpText.text = "Hp: 0"
     else
         currentHpText.text = "Hp: " .. spaceship.health
     end
-    currentExpText.text = "Exp: " .. numberFormat.format(spaceshipStats.exp) .. "/" .. numberFormat.format(spaceshipStats.nextLevelExp)
-
-    livesText.text = spaceshipStats.lives
-    moneyText.text = numberFormat.format(spaceshipStats.money) .. "c"
 end
 
 local function updateBarHp()
@@ -157,74 +159,81 @@ local function levelUp()
     updateText()
     updateBarHp()
 
-    levelUpText = display.newText( "Level up!" , _W/2, _H/2, "fonts/pixel_font_7.ttf", 25 )
-    uiGroup:insert( levelUpText )
-    transition.to( levelUpText, {
+    levelUpText = display.newText("Level up!" , _W/2, _H/2, "fonts/pixel_font_7.ttf", 25)
+    uiGroup:insert(levelUpText)
+
+    transition.to(levelUpText, {
         time = 3000,
         alpha = 0,
-        onComplete = function( ) display.remove( levelUpText ) end 
-    } )
+        x = _W / 2,
+        y = _H / 2 - 50,
+        onComplete = function() display.remove(levelUpText) end 
+    })
 end
 
-local function updateBarExp( )
-    local percent = ( spaceshipStats.exp/spaceshipStats.nextLevelExp ) 
+local function updateBarExp()
+    local percent = (spaceshipStats.exp / spaceshipStats.nextLevelExp) 
 
-    progressViewExp:setProgress( percent )
+    progressViewExp:setProgress(percent)
 
-    if( spaceshipStats.exp >= spaceshipStats.nextLevelExp )then
-        spaceshipStats.exp = ( spaceshipStats.exp - spaceshipStats.nextLevelExp )
+    if (spaceshipStats.exp >= spaceshipStats.nextLevelExp) then
+        spaceshipStats.exp = (spaceshipStats.exp - spaceshipStats.nextLevelExp)
 
         --spaceshipStats.nextLevelExp = math.round( spaceshipStats.nextLevelExp + ( spaceshipStats.nextLevelExp * 1.1 ) )
-        spaceshipStats.nextLevelExp = math.round( spaceshipStats.nextLevelExp + 10 * ( math.sqrt( spaceshipStats.nextLevelExp ) ) )
+        spaceshipStats.nextLevelExp = math.round(spaceshipStats.nextLevelExp + 5 * math.sqrt(spaceshipStats.nextLevelExp))
+        local decimalNextLevelExp = math.round(spaceshipStats.nextLevelExp / 10) * 10
+        spaceshipStats.nextLevelExp = decimalNextLevelExp
 
         spaceshipStats.level = spaceshipStats.level + 1
-        levelUp( )
+        levelUp()
     end
 end
 
-local function createAsteroid( )
-    local asteroid = asteroid.new( )
-    table.insert( asteroidsTable, asteroid )
-    background:insert( asteroid )
+local function createAsteroid()
+    local asteroid = asteroid.new()
+    table.insert(asteroidsTable, asteroid)
+    background:insert(asteroid)
 end
 
-local function gameLoop( )
+local function gameLoop()
     createAsteroid()
 
     -- Remove asteroids which have drifted off screen
     for i = #asteroidsTable, 1, -1 do
         local thisAsteroid = asteroidsTable[i]
 
-        if ( thisAsteroid.alive ) then
-            if ( thisAsteroid.x < -50 or
+        if (thisAsteroid.alive) then
+            if (thisAsteroid.x < -50 or
                 thisAsteroid.x > display.contentWidth + 50 or
                 thisAsteroid.y < -50 or
-                thisAsteroid.y > display.contentHeight + 50 )
+                thisAsteroid.y > display.contentHeight + 50)
             then
-                thisAsteroid:removeSelf( )
-                table.remove( asteroidsTable, i )
+                thisAsteroid:removeSelf()
+                table.remove(asteroidsTable, i)
             end
         end
     end
 end
 
-local function restoreShip( )
-    pauseButton:setEnabled( true ) 
-    spaceship.health = 100 + ( spaceshipStats.level * 5 )
-    progressViewHp:setProgress( spaceship.health/100 )
-    updateText( )
+local function restoreShip()
+    pauseButton:setEnabled(true) 
+    spaceship.health = spaceshipStats.health
+    progressViewHp:setProgress(spaceship.health/100)
+    updateText()
 
-    transition.to( spaceship, { alpha=1, time=3000,
+    transition.to(spaceship, { 
+        alpha=1,
+        time=3000,
         onComplete = function()
-            progressViewHp:setProgress( spaceship.health/100 )
+            progressViewHp:setProgress(spaceship.health/100)
             spaceship.alive = true 
             spaceship.isBodyActive = true
-            timer.resume( fireLoopTimer )
+            timer.resume(fireLoopTimer)
         end
-    } )
+    })
 
-    transition.to( spaceship.exhaust1, { alpha=1, time=3000, } )
-    transition.to( spaceship.exhaust2, { alpha=1, time=3000, } )
+    transition.to(spaceship.exhaust1, { alpha=1, time=3000 })
+    transition.to(spaceship.exhaust2, { alpha=1, time=3000 })
 end
 
 -- Deactivates Body, has to be outside of Collison
@@ -232,185 +241,187 @@ local function deactivateBody( )
     spaceship.isBodyActive = false
 end
 
-local function onCollision( event )
-    if ( event.phase == "began" ) then
+local function onCollision(event)
+    if (event.phase == "began") then
         local obj1 = event.object1
         local obj2 = event.object2
 
         -- Shot and Asteroid Collision
-        if ( ( obj1.myName == "shot" and obj2.myName == "asteroid" ) or
-            ( obj1.myName == "asteroid" and obj2.myName == "shot" ) )
+        if ((obj1.myName == "shot" and obj2.myName == "asteroid") or
+            (obj1.myName == "asteroid" and obj2.myName == "shot"))
         then
-            if ( obj1.myName == "shot" and obj2.myName == "asteroid" ) then
+            if (obj1.myName == "shot" and obj2.myName == "asteroid") then
                 obj2.health = obj2.health - spaceship.weapon.damage
 
-                local damageText = display.newText( spaceship.weapon.damage, obj2.x, obj2.y, "fonts/pixel_font_7.ttf", 20 )
-                uiGroup:insert( damageText )        
-                transition.to( damageText, {
+                local damageText = display.newText(spaceship.weapon.damage, obj2.x, obj2.y, "fonts/pixel_font_7.ttf", 20)
+                uiGroup:insert(damageText)        
+                transition.to(damageText, {
                     time = 500,
                     alpha = 0,
                     x = obj2.x,
                     y = obj2.y - 50,
-                    onComplete = function( ) display.remove( damageText ) end
-                } )
+                    onComplete = function() display.remove(damageText) end
+                })
 
-                if ( obj2.health > 0 ) then
-                    obj2:hitMarker( )              
-                    obj1:removeSelf( )
-                elseif ( obj2.health <= 0 ) then
+                if (obj2.health > 0) then
+                    obj2:hitMarker()              
+                    obj1:removeSelf()
+                elseif (obj2.health <= 0) then
                     obj2.alive = false  
-                    obj2.destroy( )
-                    obj1:removeSelf( )
-                    obj2:removeSelf( )
+                    obj2.destroy()
+                    obj1:removeSelf()
+                    obj2:removeSelf()
 
-                    local moneyText = display.newText( "+" .. obj2.money .. "$", obj2.x, obj2.y, "fonts/pixel_font_7.ttf", 15 )
-                    uiGroup:insert( moneyText )
-                    transition.to( moneyText, {
+                    local moneyText = display.newText("+" .. obj2.money .. "c", obj2.x, obj2.y, "fonts/pixel_font_7.ttf", 15)
+                    uiGroup:insert(moneyText)
+                    transition.to(moneyText, {
                         time = 1500,
                         alpha = 0,
                         x = obj2.x,
                         y = obj2.y - 50,
-                        onComplete = function( ) moneyText:removeSelf( ) end
-                    } )
+                        onComplete = function() moneyText:removeSelf() end
+                    })
 
                     spaceshipStats.exp = spaceshipStats.exp + obj2.exp
                     spaceshipStats.money = spaceshipStats.money + obj2.money
+                    asteroidCounter = asteroidCounter + 1
 
-                    updateText( )
-                    updateBarExp( )  
+                    updateText()
+                    updateBarExp()  
                 end
-            elseif ( obj1.myName == "asteroid" and obj2.myName == "shot" ) then
+            elseif (obj1.myName == "asteroid" and obj2.myName == "shot") then
                 obj1.health = obj1.health - spaceship.weapon.damage
 
-                local damageText = display.newText( spaceship.weapon.damage, obj1.x, obj1.y, "fonts/pixel_font_7.ttf", 20 )
-                uiGroup:insert( damageText )        
-                transition.to( damageText, {
+                local damageText = display.newText(spaceship.weapon.damage, obj1.x, obj1.y, "fonts/pixel_font_7.ttf", 20)
+                uiGroup:insert(damageText)        
+                transition.to(damageText, {
                     time = 500,
                     alpha = 0,
                     x = obj1.x,
                     y = obj1.y - 50,
-                    onComplete = function( ) display.remove( damageText ) end
-                } )
+                    onComplete = function() display.remove(damageText) end
+                })
 
-                if ( obj1.health > 0 ) then              
-                    obj1:hitMarker( )               
-                    obj2:removeSelf( )
-                elseif ( obj1.health <= 0 ) then
+                if (obj1.health > 0) then              
+                    obj1:hitMarker()               
+                    obj2:removeSelf()
+                elseif (obj1.health <= 0) then
                     obj1.alive = false   
-                    obj1.destroy( )
-                    obj1:removeSelf( )
-                    obj2:removeSelf( )   
+                    obj1.destroy()
+                    obj1:removeSelf()
+                    obj2:removeSelf()   
 
-                    local moneyText = display.newText( "+" .. obj1.money .. "$", obj1.x, obj1.y, "fonts/pixel_font_7.ttf", 15 )
-                    uiGroup:insert( moneyText )
-                    transition.to( moneyText, {
+                    local moneyText = display.newText("+" .. obj1.money .. "$", obj1.x, obj1.y, "fonts/pixel_font_7.ttf", 15)
+                    uiGroup:insert(moneyText)
+                    transition.to(moneyText, {
                         time = 1500,
                         alpha = 0,
                         x = obj1.x,
                         y = obj1.y - 50,
-                        onComplete = function( ) moneyText:removeSelf( ) end
-                    } )              
+                        onComplete = function() moneyText:removeSelf() end
+                    })              
 
                     spaceshipStats.exp = spaceshipStats.exp + obj1.exp
-                    spaceshipStats.money = spaceshipStats.money + obj1.money         
+                    spaceshipStats.money = spaceshipStats.money + obj1.money
+                    asteroidCounter = asteroidCounter + 1
 
-                    updateText( )
-                    updateBarExp( )
+                    updateText()
+                    updateBarExp()
                 end
             end
 
         -- Asteroid and Spaceship Collision
-        elseif ( ( obj1.myName == "spaceship" and obj2.myName == "asteroid" ) or
-             ( obj1.myName == "asteroid" and obj2.myName == "spaceship" ) )
+        elseif ((obj1.myName == "spaceship" and obj2.myName == "asteroid") or
+             (obj1.myName == "asteroid" and obj2.myName == "spaceship"))
         then
-            system.vibrate( )
+            system.vibrate()
 
-            if ( obj1.myName == "spaceship" and obj2.myName == "asteroid" ) then
-                if ( spaceship.alive ) then
+            if (obj1.myName == "spaceship" and obj2.myName == "asteroid") then
+                if (spaceship.alive) then
                     obj1.health = obj1.health - obj2.damage
 
-                    local damageText = display.newText( "-" .. obj2.damage .. "Hp", obj1.x, obj1.y, "fonts/pixel_font_7.ttf", 20 )
-                    damageText:setFillColor( 1, 0, 0 )
-                    uiGroup:insert( damageText )
+                    local damageText = display.newText("-" .. obj2.damage .. "Hp", obj1.x, obj1.y, "fonts/pixel_font_7.ttf", 20)
+                    damageText:setFillColor(1, 0, 0)
+                    uiGroup:insert(damageText)
 
-                    transition.to( damageText, {
+                    transition.to(damageText, {
                         time = 1000,
                         alpha = 0,
                         x = obj1.x,
                         y = obj1.y - 50,
-                        onComplete = function( ) display.remove( damageText ) end 
-                    } )
+                        onComplete = function() display.remove(damageText) end 
+                    })
 
                     obj2.alive = false    
-                    obj2:removeSelf( )
-                    obj2:destroy( )
+                    obj2:removeSelf()
+                    obj2:destroy()
 
-                    updateBarHp( )
-                    updateText( )
+                    updateBarHp()
+                    updateText()
                 end
-            elseif ( obj2.myName == "spaceship" and obj1.myName == "asteroid" ) then
-                if ( spaceship.alive ) then
+            elseif (obj2.myName == "spaceship" and obj1.myName == "asteroid") then
+                if (spaceship.alive) then
                     obj2.health = obj2.health - obj1.damage
 
-                    local damageText = display.newText( "-" .. obj1.damage .. "Hp", obj2.x, obj2.y, "fonts/pixel_font_7.ttf", 20 )
-                    damageText:setFillColor( 1, 0, 0 )
-                    uiGroup:insert( damageText )
+                    local damageText = display.newText("-" .. obj1.damage .. "Hp", obj2.x, obj2.y, "fonts/pixel_font_7.ttf", 20)
+                    damageText:setFillColor(1, 0, 0)
+                    uiGroup:insert(damageText)
 
-                    transition.to( damageText, {
+                    transition.to(damageText, {
                         time = 1000,
                         alpha = 0,
                         x = obj2.x,
                         y = obj2.y - 50,
-                        onComplete = function( ) display.remove( damageText ) end 
-                    } )
+                        onComplete = function() display.remove(damageText) end 
+                    })
 
                     obj1.alive = false    
-                    obj1:removeSelf( )
-                    obj1:destroy( )
+                    obj1:removeSelf()
+                    obj1:destroy()
 
-                    updateBarHp( )
-                    updateText( )
+                    updateBarHp()
+                    updateText()
                 end
             end
 
-            if ( spaceship.health <= 0 ) then
-                pauseButton:setEnabled( false ) 
-                timer.performWithDelay( 1, deactivateBody )
+            if (spaceship.health <= 0) then
+                pauseButton:setEnabled(false) 
+                timer.performWithDelay(1, deactivateBody)
                 spaceship.alive = false
                 spaceship.alpha = 0
                 spaceship.exhaust1.alpha = 0
                 spaceship.exhaust2.alpha = 0  
-                timer.pause( fireLoopTimer )
+                timer.pause(fireLoopTimer)
                 spaceship.destroy()
                 lives = lives - 1
 
-               if ( lives == 0 ) then
-                    spaceship:removeSelf( )
-                    spaceship.spaceshipHandler:removeSelf( )
-                    spaceship.exhaust1:removeSelf( )
-                    spaceship.exhaust2:removeSelf( )
+               if (lives == 0) then
+                    spaceship:removeSelf()
+                    spaceship.spaceshipHandler:removeSelf()
+                    spaceship.exhaust1:removeSelf()
+                    spaceship.exhaust2:removeSelf()
 
-                    local gameOverText = display.newImage( "images/userinterface/text_game_over.png" )
+                    local gameOverText = display.newImage("images/userinterface/text_game_over.png")
                     gameOverText.x = display.contentCenterX
                     gameOverText.y = display.contentCenterY
-                    uiGroup:insert( gameOverText )  
+                    uiGroup:insert(gameOverText)  
 
-                    timer.performWithDelay( 3000, gameOver.show )
-                elseif ( lives > 0 ) then
-                    timer.performWithDelay( 2000, restoreShip )
+                    timer.performWithDelay(3000, gameOver.show)
+                elseif (lives > 0) then
+                    timer.performWithDelay(2000, restoreShip)
                 end
             end
         end
     end
 end
 
-local function moveSpaceship( event )
-    if ( gamePaused == 0 ) then
-        if ( event.phase == "began" ) then
-            spaceship.spaceshipHandler.markX = spaceship.spaceshipHandler.x     -- store x location of object
-            spaceship.spaceshipHandler.markY = spaceship.spaceshipHandler.y     -- store y location of object
-        elseif ( event.phase == "moved" ) then
-            if ( spaceship.spaceshipHandler.markX ~= nil and spaceship.spaceshipHandler.markY ~= nil ) then
+local function moveSpaceship(event)
+    if (gamePaused == false) then
+        if (event.phase == "began") then
+            spaceship.spaceshipHandler.markX = spaceship.spaceshipHandler.x     -- Store x location of object
+            spaceship.spaceshipHandler.markY = spaceship.spaceshipHandler.y     -- Store y location of object
+        elseif (event.phase == "moved") then
+            if (spaceship.spaceshipHandler.markX ~= nil and spaceship.spaceshipHandler.markY ~= nil) then
                 local x = (event.x - event.xStart) + spaceship.spaceshipHandler.markX
                 local y = (event.y - event.yStart) + spaceship.spaceshipHandler.markY
 
@@ -424,70 +435,71 @@ local function moveSpaceship( event )
                 spaceship.y = y
 
                 -- Boundary Control
-                if ( spaceship.spaceshipHandler.x < 25 ) then spaceship.spaceshipHandler.x =  25 end
-                if ( spaceship.spaceshipHandler.x > _W - 25 ) then spaceship.spaceshipHandler.x = _W - 25 end
-                if ( spaceship.spaceshipHandler.y < 25 ) then spaceship.spaceshipHandler.y = 25 end
-                if ( spaceship.spaceshipHandler.y > _H - 50 ) then spaceship.spaceshipHandler.y = _H - 50 end
+                if (spaceship.spaceshipHandler.x < 25) then spaceship.spaceshipHandler.x =  25 end
+                if (spaceship.spaceshipHandler.x > _W - 25) then spaceship.spaceshipHandler.x = _W - 25 end
+                if (spaceship.spaceshipHandler.y < 25) then spaceship.spaceshipHandler.y = 25 end
+                if (spaceship.spaceshipHandler.y > _H - 50) then spaceship.spaceshipHandler.y = _H - 50 end
 
-                if ( spaceship.exhaust1.x <  25 + 8 ) then spaceship.exhaust1.x =  25 + 8 end
-                if ( spaceship.exhaust2.x <  25 - 8 ) then spaceship.exhaust2.x =  25 - 8 end
-                if ( spaceship.exhaust1.x >  _W - 25 + 8 ) then spaceship.exhaust1.x =  _W - 25 + 8 end
-                if ( spaceship.exhaust2.x >  _W - 25 - 8 ) then spaceship.exhaust2.x =  _W - 25 - 8 end
-                if ( spaceship.exhaust1.y <  70 ) then spaceship.exhaust1.y =  70 end
-                if ( spaceship.exhaust2.y <  70 ) then spaceship.exhaust2.y =  70 end
-                if ( spaceship.exhaust1.y >  _H - 10 ) then spaceship.exhaust1.y =  _H - 10 end
-                if ( spaceship.exhaust2.y >  _H - 10 ) then spaceship.exhaust2.y =  _H - 10 end
+                if (spaceship.exhaust1.x <  25 + 8) then spaceship.exhaust1.x =  25 + 8 end
+                if (spaceship.exhaust2.x <  25 - 8) then spaceship.exhaust2.x =  25 - 8 end
+                if (spaceship.exhaust1.x >  _W - 25 + 8) then spaceship.exhaust1.x =  _W - 25 + 8 end
+                if (spaceship.exhaust2.x >  _W - 25 - 8) then spaceship.exhaust2.x =  _W - 25 - 8 end
+                if (spaceship.exhaust1.y <  70) then spaceship.exhaust1.y =  70 end
+                if (spaceship.exhaust2.y <  70) then spaceship.exhaust2.y =  70 end
+                if (spaceship.exhaust1.y >  _H - 10) then spaceship.exhaust1.y =  _H - 10 end
+                if (spaceship.exhaust2.y >  _H - 10) then spaceship.exhaust2.y =  _H - 10 end
 
-                if ( spaceship.x < 25 ) then spaceship.x = 25 end
-                if ( spaceship.x > _W - 25 ) then spaceship.x = _W - 25 end
-                if ( spaceship.y < 25 ) then spaceship.y = 25 end
-                if ( spaceship.y > _H - 50 ) then spaceship.y = _H - 50 end
+                if (spaceship.x < 25) then spaceship.x = 25 end
+                if (spaceship.x > _W - 25) then spaceship.x = _W - 25 end
+                if (spaceship.y < 25) then spaceship.y = 25 end
+                if (spaceship.y > _H - 50) then spaceship.y = _H - 50 end
             end
-        elseif ( event.phase == "ended" or event.phase == "cancelled" ) then
-            display.getCurrentStage( ):setFocus( nil )
+        elseif (event.phase == "ended" or event.phase == "cancelled") then
+            display.getCurrentStage():setFocus(nil)
         end
         
         return true
     end
 end
 
-local function fire( )
-    spaceship:fire( weaponStats.level )
+local function fire()
+    spaceship:fire(weaponStats.level)
 end
+
 -----------------------------------------------------------------------------------------
 -- Scene Methods
 -----------------------------------------------------------------------------------------
 -- create()
-function scene:create( event )
+function scene:create(event)
     local sceneGroup = self.view
     -- Code here runs when the scene is first created but has not yet appeared on screen
-    gameLoopTimer = timer.performWithDelay( asteroidRandStats.spawnrate, gameLoop, 0 )
-    fireLoopTimer = timer.performWithDelay( spaceship.weapon.firerate, fire, 0 )
+    gameLoopTimer = timer.performWithDelay(asteroidRandStats.spawnrate, gameLoop, 0)
+    fireLoopTimer = timer.performWithDelay(spaceship.weapon.firerate, fire, 0)
 
     lives = 2
 
-    local uiLevel = display.newImage( "images/userinterface/empty_button.png" )
+    local uiLevel = display.newImage("images/userinterface/empty_button.png")
     uiLevel.x = 50
     uiLevel.y = 25
-    uiLevel:scale( 0.94, 0.94 )
-    sceneGroup:insert( uiLevel )
-    uiGroup:insert( uiLevel )
+    uiLevel:scale(0.94, 0.94)
+    sceneGroup:insert(uiLevel)
+    uiGroup:insert(uiLevel)
 
-    local uiBottom = display.newImage( "images/userinterface/moneybar.png" )
+    local uiBottom = display.newImage("images/userinterface/moneybar.png")
     uiBottom.x = _W - 115
     uiBottom.y = _H - 25
-    uiBottom:scale( 1.05, 1.05 )
-    sceneGroup:insert( uiBottom )
-    uiGroup:insert( uiBottom )
+    uiBottom:scale(1.05, 1.05)
+    sceneGroup:insert(uiBottom)
+    uiGroup:insert(uiBottom)
 
-    local uiLives = display.newImage( "images/userinterface/empty_button.png" )
+    local uiLives = display.newImage("images/userinterface/empty_button.png")
     uiLives.x = 95
     uiLives.y = _H - 25
-    uiLives:scale( 0.94, 0.94 )
-    sceneGroup:insert( uiLives )
-    uiGroup:insert( uiLives )
+    uiLives:scale(0.94, 0.94)
+    sceneGroup:insert(uiLives)
+    uiGroup:insert(uiLives)
 
-    pauseButton = widget.newButton{
+    pauseButton = widget.newButton {
         x = 50,
         y = display.contentHeight - 25,
         width = 40,
@@ -496,95 +508,101 @@ function scene:create( event )
         overFile = "images/userinterface/pause_locked.png",
         onEvent = pauseButtonEvent
     }
-    sceneGroup:insert( pauseButton )
-    uiGroup:insert( pauseButton )
+    sceneGroup:insert(pauseButton)
+    uiGroup:insert(pauseButton)
 
-    moneyText = display.newText( spaceshipStats.money, _W/2+25, _H-25, "fonts/pixel_font_7.ttf", 17, "center" )
-    sceneGroup:insert( moneyText )
-    uiGroup:insert( moneyText )
+    moneyText = display.newText(spaceshipStats.money, _W/2+25, _H-25, "fonts/pixel_font_7.ttf", 17, "center")
+    sceneGroup:insert(moneyText)
+    uiGroup:insert(moneyText)
 
-    livesText = display.newText( lives, 95, _H-25, "fonts/pixel_font_7.ttf", 20, "center" )
-    sceneGroup:insert( livesText )
-    uiGroup:insert( livesText )
+    livesText = display.newText(lives, 95, _H-25, "fonts/pixel_font_7.ttf", 20, "center")
+    sceneGroup:insert(livesText)
+    uiGroup:insert(livesText)
 
-    levelText = display.newText( spaceshipStats.level, 50, 25, "fonts/pixel_font_7.ttf", 20, "center" )
-    sceneGroup:insert( levelText )
-    uiGroup:insert( levelText )
+    levelText = display.newText(spaceshipStats.level, 50, 25, "fonts/pixel_font_7.ttf", 20, "center")
+    sceneGroup:insert(levelText)
+    uiGroup:insert(levelText)
 
-    currentHpText = display.newText( "Hp: " .. spaceship.health, _W/2+25, 16, "fonts/pixel_font_7.ttf", 15, "center" )
-    sceneGroup:insert( currentHpText )
-    uiGroup:insert( currentHpText )
+    currentHpText = display.newText("Hp: " .. spaceship.health, _W/2+25, 16, "fonts/pixel_font_7.ttf", 15, "center")
+    sceneGroup:insert(currentHpText)
+    uiGroup:insert(currentHpText)
 
-    currentExpText = display.newText( "Exp: " .. spaceshipStats.exp, _W/2+25, 33, "fonts/pixel_font_7.ttf", 15, "center" )
-    sceneGroup:insert( currentExpText )
-    uiGroup:insert( currentExpText )
+    currentExpText = display.newText("Exp: " .. spaceshipStats.exp, _W/2+25, 33, "fonts/pixel_font_7.ttf", 15, "center")
+    sceneGroup:insert(currentExpText)
+    uiGroup:insert(currentExpText)
 
-    updateBarExp( )
-    updateBarHp( )
-    updateText( )
+    asteroidCounterText = display.newText("AD: " .. asteroidCounter, 50, 60, "fonts/pixel_font_7.ttf", 15, "center")
+    sceneGroup:insert(asteroidCounterText)
+    uiGroup:insert(asteroidCounterText)
+
+    updateBarExp()
+    updateBarHp()
+    updateText()
 end
 
 -- show()
-function scene:show( event )
+function scene:show(event)
     local sceneGroup = self.view
     local phase = event.phase
 
-    if ( phase == "will" ) then
+    if (phase == "will") then
         -- Code here runs when the scene is still off screen (but is about to come on screen)
         
-    elseif ( phase == "did" ) then
+    elseif (phase == "did") then
         -- Code here runs when the scene is entirely on screen
-        spaceshipStats = loadSave.loadTable( "_spaceshipStats.json" )
-        weaponStats = loadSave.loadTable( "_weaponStats.json" )
+        spaceshipStats = loadSave.loadTable("_spaceshipStats.json")
+        weaponStats = loadSave.loadTable("_weaponStats.json")
 
-        pauseButton:setEnabled( true ) 
-        gamePaused = 0
+        pauseButton:setEnabled(true)
+        gamePaused = false
     end
 end
 
 -- hide()
-function scene:hide( event )
+function scene:hide(event)
     local sceneGroup = self.view
     local phase = event.phase
 
-    if ( phase == "will" ) then
+    if (phase == "will") then
         -- Code here runs when the scene is on screen (but is about to go off screen)
 
-    elseif ( phase == "did" ) then
+    elseif (phase == "did") then
         -- Code here runs immediately after the scene goes entirely off screen
 
     end
 end
 
 -- destroy()
-function scene:destroy( event )
+function scene:destroy(event)
     local sceneGroup = self.view
     -- Code here runs prior to the removal of scene's view
-    saveAll( )
+    saveAll()
 
-    display.remove( weapon )
-    display.remove( spaceship )
-    display.remove( spaceship.spaceshipHandler )
-    display.remove( spaceship.exhaust1 )
-    display.remove( spaceship.exhaust2 )
+    display.remove(weapon)
+    display.remove(spaceship)
+    display.remove(spaceship.spaceshipHandler)
+    display.remove(spaceship.exhaust1)
+    display.remove(spaceship.exhaust2)
 
-    background:removeSelf( )
-    uiGroup:removeSelf( )
+    background:removeSelf()
+    uiGroup:removeSelf()
 
-    timer.pause( gameLoopTimer )
-    timer.pause( fireLoopTimer )
+    timer.pause(gameLoopTimer)
+    timer.pause(fireLoopTimer)
 
-    Runtime:removeEventListener( "collision", onCollision )
+    Runtime:removeEventListener("collision", onCollision)
 end
+
 -----------------------------------------------------------------------------------------
 -- Scene event function listeners
 -----------------------------------------------------------------------------------------
-scene:addEventListener( "create", scene )
-scene:addEventListener( "show", scene )
-scene:addEventListener( "hide", scene )
-scene:addEventListener( "destroy", scene )
+scene:addEventListener("create", scene)
+scene:addEventListener("show", scene)
+scene:addEventListener("hide", scene)
+scene:addEventListener("destroy", scene)
 
-Runtime:addEventListener( "collision", onCollision )
-spaceship.spaceshipHandler:addEventListener( "touch", moveSpaceship )
+Runtime:addEventListener("collision", onCollision)
+spaceship.spaceshipHandler:addEventListener("touch", moveSpaceship)
 -----------------------------------------------------------------------------------------
+
 return scene
