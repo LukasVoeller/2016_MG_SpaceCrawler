@@ -1,4 +1,4 @@
-# MobileGame_2_SpaceCrawler
+# MG_2016_SpaceCrawler
 A moblie game created with Corona SDK
 
 <p>
